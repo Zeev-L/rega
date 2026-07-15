@@ -1,0 +1,27 @@
+{
+  "name": "rega",
+  "version": "0.1.0",
+  "description": "רגע — מלווה יומי לחיזוק ביטחון והצלחה בעבודה (macOS menu-bar)",
+  "main": "main.js",
+  "author": "Zeev",
+  "license": "MIT",
+  "scripts": {
+    "icons": "node generate-icon.js",
+    "start": "electron .",
+    "dist": "electron-builder --mac dmg"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.zeev.rega",
+    "productName": "רגע",
+    "files": ["main.js", "preload.js", "store.js", "windows/**", "shared/**", "assets/**"],
+    "mac": {
+      "category": "public.app-category.healthcare-fitness",
+      "icon": "assets/icon.png",
+      "target": ["dmg"]
+    }
+  }
+}

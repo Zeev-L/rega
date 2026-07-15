@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="../shared/styles.css">
+  <style>
+    body{overflow-y:auto}
+    .top{position:sticky;top:0;z-index:5;backdrop-filter:blur(8px);
+      background:linear-gradient(180deg,rgba(21,19,42,.92),rgba(21,19,42,.72));
+      padding:16px 26px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px}
+    .brand{display:flex;align-items:center;gap:9px;font-size:15px}
+    .brand .glyph{width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 35%,var(--gold),#a9772f)}
+    .brand b{letter-spacing:.06em}
+    .tabs{display:flex;gap:6px;margin-inline-start:auto}
+    .tabs b{font-weight:400;font-size:14px;color:var(--ivory-dim);cursor:pointer;padding:8px 16px;border:1px solid var(--line);border-radius:100px}
+    .tabs b.on{color:var(--night);background:var(--gold);border-color:transparent}
+    .page{max-width:560px;margin:0 auto;padding:24px 26px 60px}
+    .pane{display:none} .pane.on{display:block}
+    .lead{font-size:13px;color:var(--ivory-dim);margin-bottom:16px;line-height:1.6}
+
+    .sec{padding:16px 2px;border-bottom:1px solid var(--line)}
+    .sechd{display:flex;align-items:flex-start;gap:14px}
+    .sechd .grow{flex:1}
+    .name{font-family:var(--serif);font-size:18px;color:var(--ivory)}
+    .sub{font-size:12.5px;color:var(--ivory-dim);margin-top:3px}
+    .tog{width:44px;height:25px;border-radius:100px;background:var(--line-strong);position:relative;flex:none;cursor:pointer;transition:background .2s;margin-top:2px}
+    .tog b{position:absolute;top:3px;inset-inline-start:3px;width:19px;height:19px;border-radius:50%;background:var(--ivory);transition:inset-inline-start .2s}
+    .tog.on{background:var(--gold)} .tog.on b{inset-inline-start:22px;background:var(--night)}
+
+    .sched{margin-top:12px;background:rgba(244,238,225,.04);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:none}
+    .sched.on{display:block}
+    .srow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;font-size:14px;color:var(--ivory)}
+    .srow+.srow{border-top:1px solid var(--line)}
+    .times{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-start}
+    .time{background:rgba(244,238,225,.08);border:1px solid var(--line-strong);border-radius:100px;padding:6px 12px;font-size:13.5px;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:8px}
+    .time .x{cursor:pointer;color:var(--ivory-faint)}
+    .time input{background:transparent;border:none;color:var(--ivory);font-size:13.5px;width:64px;outline:none;font-variant-numeric:tabular-nums;direction:ltr;text-align:center}
+    .addtime{color:var(--gold);cursor:pointer;background:transparent;border:1px dashed var(--line-strong);border-radius:100px;padding:6px 12px;font-size:13px}
+    .ctrl{display:flex;align-items:center;gap:12px}
+    .rb{width:28px;height:28px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--ivory);font-size:15px;cursor:pointer;line-height:1}
+    .rb:hover{background:rgba(244,238,225,.06)}
+    .num{width:22px;text-align:center;font-variant-numeric:tabular-nums}
+    .days{display:flex;gap:6px}
+    .day{width:30px;height:30px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;color:var(--ivory-dim);font-size:13px;cursor:pointer}
+    .day.on{background:var(--gold);color:var(--night);border-color:transparent}
+
+    input.tin,input.min{background:rgba(244,238,225,.06);border:1px solid var(--line-strong);border-radius:10px;
+      padding:9px 13px;color:var(--ivory);font-size:14px;font-family:var(--sans);outline:none}
+    input.tin:focus,input.min:focus,input.rin:focus{border-color:var(--gold)}
+    .min{width:230px;direction:ltr;text-align:right}
+    .rin{width:100%;background:rgba(244,238,225,.06);border:1px solid var(--line-strong);border-radius:10px;padding:10px 13px;color:var(--ivory);font-size:13px;font-family:var(--sans);outline:none;direction:ltr;text-align:right}
+
+    .subtabs{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+    .subtabs b{font-weight:400;font-size:13.5px;color:var(--ivory-dim);cursor:pointer;padding:7px 15px;border:1px solid var(--line);border-radius:100px}
+    .subtabs b.on{color:var(--night);background:var(--gold);border-color:transparent}
+    .edit{display:none} .edit.on{display:block}
+    .clabel{font-size:12.5px;color:var(--gold);margin:16px 0 7px}
+    .row{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;margin-bottom:8px;background:rgba(244,238,225,.045);border:1px solid var(--line);border-radius:12px}
+    .row .tx{flex:1}
+    .row textarea,.row input.line{width:100%;background:transparent;border:none;color:var(--ivory);font-family:var(--serif);font-size:15.5px;line-height:1.5;outline:none;resize:none;text-align:right}
+    .row .ttl{color:var(--gold);font-size:12px;margin-bottom:4px}
+    .row .x{cursor:pointer;color:var(--ivory-faint);flex:none}
+    .addrow{display:flex;gap:10px;margin-top:6px}
+    .addrow input{flex:1;background:rgba(244,238,225,.05);border:1px solid var(--line);border-radius:12px;padding:11px 14px;color:var(--ivory);font-family:var(--serif);font-size:15px;outline:none}
+    .addrow button,.upload{background:var(--gold);color:var(--night);border:none;border-radius:12px;padding:0 20px;font-size:14px;cursor:pointer;height:44px}
+    .note{font-size:12.5px;color:var(--ivory-faint);margin-top:12px;line-height:1.6}
+    .cin{width:100%;background:rgba(244,238,225,.05);border:1px solid var(--line);border-radius:12px;padding:12px 15px;color:var(--ivory);font-family:var(--serif);font-size:16px;outline:none;text-align:right}
+    .cin:focus{border-color:var(--gold)}
+    .chip{display:inline-flex;align-items:center;gap:8px;background:rgba(244,238,225,.05);border:1px solid var(--line);border-radius:100px;padding:8px 14px;font-size:14px;margin:0 0 8px 6px;font-family:var(--serif)}
+    .chip.hot{color:var(--gold);border-color:var(--gold-soft);background:var(--gold-soft)}
+    .chip .st{cursor:pointer}.chip .x{cursor:pointer;color:var(--ivory-faint)}
+    .anchor-prev{width:100%;max-width:320px;height:180px;object-fit:cover;border-radius:14px;border:1px solid var(--line);margin-bottom:12px;display:none}
+
+    .footer{position:sticky;bottom:0;display:flex;gap:12px;align-items:center;padding:14px 26px;
+      border-top:1px solid var(--line);backdrop-filter:blur(8px);
+      background:linear-gradient(0deg,rgba(21,19,42,.94),rgba(21,19,42,.7))}
+    .footer .btn{padding:11px 26px;font-size:14px}
+    .saved{color:var(--gold);font-size:13px;opacity:0;transition:opacity .3s}
+    .saved.show{opacity:1}
+    .lang{display:inline-flex;border:1px solid var(--line-strong);border-radius:100px;overflow:hidden}
+    .lang b{padding:7px 18px;font-size:13px;font-weight:400;cursor:pointer;color:var(--ivory-dim)}
+    .lang b.on{background:var(--gold);color:var(--night)}
+    .block{padding:18px 2px;border-bottom:1px solid var(--line)}
+    .flexbetween{display:flex;justify-content:space-between;align-items:center;gap:14px}
+    .testmsg{font-size:12.5px;margin-top:8px;min-height:16px}
+  </style>
+</head>
+<body>
+  <div class="top">
+    <span class="brand"><span class="glyph"></span><b>רגע</b></span>
+    <div class="tabs"><b class="on" data-tab="settings">הגדרות</b><b data-tab="editor">עריכת תוכן</b></div>
+  </div>
+
+  <div class="page">
+    <div class="pane on" data-pane="settings">
+      <div class="lead">בחר אילו סקשנים יופיעו, ולכל אחד — באילו שעות ובאילו ימים, וכמה נודניקים לפני שחייבים לפעול.</div>
+      <div id="secList"></div>
+
+      <div class="block">
+        <div class="flexbetween"><div class="name">מייל סיכום הערב</div><div class="tog" id="emailTog"><b></b></div></div>
+        <div class="sub" style="margin:8px 0 12px">נשלח אוטומטית בסוף היום. כל אחד מזין את המייל שלו.</div>
+        <div class="flexbetween">
+          <input class="min" id="emailAddr" placeholder="you@example.com">
+          <span class="time"><input id="emailTime" value="19:00"></span>
+        </div>
+      </div>
+
+      <div class="block">
+        <div class="name">חיבור מייל (Apps Script)</div>
+        <div class="sub" style="margin:8px 0 12px">הדבק את כתובת ה-Web App מ-Apps Script וסוד משותף. הוראות בקובץ apps-script/README.</div>
+        <div class="clabel" style="margin-top:0">Web App URL</div>
+        <input class="rin" id="relayUrl" placeholder="https://script.google.com/macros/s/.../exec">
+        <div class="clabel">סוד משותף (secret)</div>
+        <input class="rin" id="relaySecret" placeholder="בחר מחרוזת סודית">
+        <div style="margin-top:12px"><button class="btn ghost" id="testMail" style="padding:9px 20px;font-size:13px">בדוק שליחה עכשיו</button></div>
+        <div class="testmsg" id="testMsg"></div>
+      </div>
+
+      <div class="block" style="border-bottom:none">
+        <div class="flexbetween"><div class="name">שפה</div>
+          <div class="lang" id="lang"><b data-l="he">עברית</b><b data-l="en">English</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pane" data-pane="editor">
+      <div class="lead">כאן מזינים את התוכן של כל סקשן — לפי הסדר שבו הם מופיעים ביום.</div>
+      <div class="subtabs" id="subtabs"></div>
+      <div id="editors"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <button class="btn" id="save">שמור</button>
+    <button class="btn ghost" id="cancel">בטל שינויים</button>
+    <span class="saved" id="saved">נשמר ✓</span>
+  </div>
+
+  <script src="./settings.js"></script>
+</body>
+</html>

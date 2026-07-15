@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="../shared/styles.css">
+  <style>
+    body{display:flex;align-items:center;justify-content:center}
+    .wrap{width:100%;max-width:640px;text-align:center;padding:40px 28px}
+    .eyebrow{margin-bottom:30px}
+    #title.mantra{font-size:32px;max-width:20ch}
+    #title.mantra.sm{font-size:26px}
+    .facet{margin-bottom:18px}
+    .cue{margin-top:26px}
+    .swipe{display:flex;align-items:center;justify-content:center;gap:24px}
+    .ring{width:58px;height:58px;margin:34px auto 0;position:relative}
+    .ring i{position:absolute;inset:0;border-radius:50%;border:1.5px solid var(--line-strong)}
+    .ring b{position:absolute;inset:0;border-radius:50%;border:1.5px solid transparent;border-top-color:var(--gold);animation:spin 5s linear infinite}
+    .breathe{animation:breathe 5.5s ease-in-out infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes breathe{0%,100%{transform:scale(.9);opacity:.55}50%{transform:scale(1.08);opacity:1}}
+    .anchor-img{width:100%;max-width:420px;height:260px;margin:0 auto 24px;border-radius:20px;
+      border:1px solid var(--line);object-fit:cover;display:block;background:rgba(244,238,225,.04)}
+    .actions{display:flex;gap:14px;justify-content:center;margin-top:38px;align-items:center}
+    .meta{display:flex;justify-content:space-between;align-items:center;margin-top:16px;font-size:12.5px;color:var(--ivory-dim)}
+    .esc{position:fixed;top:20px;left:24px;color:var(--ivory-faint);font-size:12.5px}
+  </style>
+</head>
+<body>
+  <div class="esc">Esc לסגירה</div>
+  <div class="wrap fade">
+    <div class="eyebrow" id="eyebrow"></div>
+    <div class="facet" id="facet" style="display:none"></div>
+    <div class="swipe">
+      <button class="chev" id="prev" style="display:none">›</button>
+      <div class="mantra" id="title"></div>
+      <button class="chev" id="next" style="display:none">‹</button>
+    </div>
+    <div class="cloud" id="cloud" style="display:none"></div>
+    <img class="anchor-img" id="anchor" style="display:none" alt="">
+    <div id="extra"></div>
+    <div class="cue" id="cue"></div>
+    <div class="actions">
+      <button class="btn" id="act"></button>
+      <button class="btn ghost" id="snooze" style="display:none"></button>
+    </div>
+  </div>
+  <script src="./moment.js"></script>
+</body>
+</html>
