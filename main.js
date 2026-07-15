@@ -40,6 +40,7 @@ function rebuildSlots() {
   const data = store.get();
   currentDay = store.ymd(new Date());
   const weekday = new Date().getDay();
+  const nowM = nowMinutes();
   slots = [];
   for (const id of SECTION_ORDER) {
     const sec = data.sections[id];
@@ -49,11 +50,14 @@ function rebuildSlots() {
       const key = `${id}@${t}#${i}`;
       let minute = parseHM(t);
       if (sec.random15) minute = Math.max(0, Math.min(1439, minute + seededOffset(key)));
-      slots.push({ key, section: id, minute, snoozeUsed: 0, status: 'waiting' });
+      // Times already passed for today are skipped (no retroactive catch-up spam).
+      slots.push({ key, section: id, minute, snoozeUsed: 0, status: minute < nowM ? 'done' : 'waiting' });
     });
   }
   const em = data.email;
-  emailSlot = em && em.enabled ? { minute: parseHM(em.time), status: 'waiting' } : null;
+  emailSlot = em && em.enabled
+    ? { minute: parseHM(em.time), status: parseHM(em.time) < nowM ? 'done' : 'waiting' }
+    : null;
 }
 
 function tick() {
@@ -63,6 +67,8 @@ function tick() {
 
   for (const slot of slots) {
     if (slot.status === 'waiting' && nm >= slot.minute) {
+      if (nm - slot.minute > 30) { slot.status = 'done'; continue; } // missed (e.g. machine asleep) — skip
+      if (momentWin && !momentWin.isDestroyed()) break; // don't stack a second moment
       slot.status = 'shown';
       openMoment(slot.section, slot);
       break; // one at a time
@@ -295,6 +301,12 @@ app.whenReady().then(() => {
   // Debug helpers for manual verification (no effect in normal use).
   if (process.env.REGA_OPEN_SETTINGS) openSettings(process.env.REGA_OPEN_SETTINGS === '1' ? undefined : process.env.REGA_OPEN_SETTINGS);
   if (process.env.REGA_OPEN_MOMENT) openMoment(process.env.REGA_OPEN_MOMENT, null, true);
+  if (process.env.REGA_DUMP_SLOTS) {
+    console.log('DUMP nowMin=' + nowMinutes());
+    console.log('DUMP slots=' + JSON.stringify(slots.map((s) => ({ key: s.key, min: s.minute, status: s.status }))));
+    console.log('DUMP email=' + JSON.stringify(emailSlot));
+    return app.exit(0);
+  }
   if (process.env.REGA_SEND_TEST) {
     sendSummary().then((r) => { console.log('SEND_TEST_OK', r); app.exit(0); })
       .catch((e) => { console.log('SEND_TEST_FAIL', e.message); app.exit(1); });
