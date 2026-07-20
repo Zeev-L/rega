@@ -66,6 +66,13 @@ let cache = null;
 
 // Upgrade older data shapes in place (e.g. single-image anchor -> list of anchors).
 function migrate(d) {
+  // Vision: recover aspects whose content ended up in the (small) title with an empty text.
+  const v = d.sections && d.sections.vision;
+  if (v && Array.isArray(v.aspects)) {
+    v.aspects.forEach((asp) => {
+      if ((!asp.text || !asp.text.trim()) && asp.title && asp.title.trim()) { asp.text = asp.title; asp.title = ''; }
+    });
+  }
   const a = d.sections && d.sections.anchor;
   if (a) {
     if (!Array.isArray(a.items)) a.items = [];

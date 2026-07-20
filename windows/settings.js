@@ -146,7 +146,12 @@ function editorFor(id) {
   if (id === 'gratitude') return gratitudeEditor(sec);
 }
 
-function autoGrow(ta) { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+function autoGrow(ta) {
+  if (!ta.clientWidth) return;               // skip while hidden (width 0 → bogus scrollHeight)
+  ta.style.height = 'auto';
+  ta.style.height = (ta.scrollHeight + 2) + 'px';
+}
+function growAll() { document.querySelectorAll('#editors textarea').forEach(autoGrow); }
 
 function visionEditor(sec) {
   const wrap = h('div');
@@ -161,17 +166,23 @@ function visionEditor(sec) {
     wrap.innerHTML = '';
     wrap.append(h('div', { class: 'clabel', style: 'margin-top:0' }, 'גודל הטקסט בתצוגה'), size);
     sec.aspects.forEach((a, i) => {
-      const ttl = h('input', { class: 'line ttl', value: a.title, oninput: (e) => { a.title = e.target.value; } });
+      const card = h('div', { class: 'anchor-item' });
       const txt = h('textarea', { rows: '3', oninput: (e) => { a.text = e.target.value; autoGrow(e.target); } });
       txt.value = a.text;
-      const x = h('span', { class: 'x', onclick: () => { sec.aspects.splice(i, 1); redraw(); } }, '✕');
-      wrap.append(h('div', { class: 'row' }, [h('div', { class: 'tx' }, [ttl, txt]), x]));
+      const ttl = h('input', { class: 'cin', value: a.title || '', placeholder: 'כותרת קטנה מעל הטקסט — אופציונלי', oninput: (e) => { a.title = e.target.value; } });
+      const rm = h('button', { class: 'btn ghost sm2', onclick: () => { sec.aspects.splice(i, 1); redraw(); } }, 'הסר');
+      card.append(
+        h('div', { class: 'clabel', style: 'margin-top:0' }, `החזון ${i + 1} — הטקסט`),
+        h('div', { class: 'row' }, [h('div', { class: 'tx' }, txt)]),
+        h('div', { class: 'clabel' }, 'כותרת קטנה (אופציונלי)'), ttl,
+        h('div', { style: 'margin-top:10px' }, rm)
+      );
+      wrap.append(card);
       setTimeout(() => autoGrow(txt), 0);
     });
-    const inp = h('input', { placeholder: 'הוסף היבט חדש (כותרת)…' });
-    const add = h('button', { onclick: () => { if (inp.value.trim()) { sec.aspects.push({ title: inp.value.trim(), text: '' }); redraw(); } } }, 'הוסף');
-    wrap.append(h('div', { class: 'addrow' }, [inp, add]));
-    wrap.append(h('div', { class: 'note' }, 'Enter בתוך הטקסט = שורה חדשה. אם יש כמה היבטים — במסך החזון אפשר להחליק ביניהם.'));
+    const add = h('button', { onclick: () => { sec.aspects.push({ title: '', text: '' }); redraw(); } }, '+ הוסף חזון');
+    wrap.append(h('div', { class: 'addrow' }, [h('div', { style: 'flex:1' }), add]));
+    wrap.append(h('div', { class: 'note' }, 'הטקסט הגדול הוא החזון עצמו — Enter בתוכו = שורה חדשה. הכותרת קטנה ואופציונלית. אם יש כמה חזונות — במסך החזון מחליקים ביניהם.'));
   };
   redraw(); return wrap;
 }
@@ -252,6 +263,7 @@ function gratitudeEditor(sec) {
 function switchTab(tab) {
   [...document.querySelectorAll('.tabs b')].forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
   [...document.querySelectorAll('.pane')].forEach((p) => p.classList.toggle('on', p.dataset.pane === tab));
+  if (tab === 'editor') requestAnimationFrame(growAll); // size textareas once the pane is actually visible
 }
 async function persist(silent) {
   await window.rega.save({ sections: D.sections, email: D.email, relay: D.relay, language: D.language });
