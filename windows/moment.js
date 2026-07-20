@@ -21,6 +21,7 @@ async function render() {
   if (section === 'vision') {
     const asp = (sec.aspects && sec.aspects.length) ? sec.aspects[Math.floor(Math.random() * sec.aspects.length)] : { title: '', text: 'עדיין לא הוזן חזון. פתח את ההגדרות כדי להזין.' };
     el('facet').textContent = asp.title; el('facet').style.display = 'block';
+    el('title').classList.add('vision');           // אזור רחב מעט + מעברי שורה ידניים
     el('title').textContent = asp.text;
     el('cue').textContent = 'קרא לאט. זה מי שאתה במיטבך.';
     el('act').textContent = 'קראתי';
