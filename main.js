@@ -212,7 +212,7 @@ ipcMain.handle('image:pick', async () => {
   const ext = path.extname(src) || '.png';
   const destDir = path.join(app.getPath('userData'), 'images');
   fs.mkdirSync(destDir, { recursive: true });
-  const dest = path.join(destDir, 'anchor' + ext);
+  const dest = path.join(destDir, 'anchor-' + Date.now() + ext); // unique so multiple anchors don't overwrite
   fs.copyFileSync(src, dest);
   return dest;
 });

@@ -146,20 +146,32 @@ function editorFor(id) {
   if (id === 'gratitude') return gratitudeEditor(sec);
 }
 
+function autoGrow(ta) { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
+
 function visionEditor(sec) {
   const wrap = h('div');
+  const size = h('div', { class: 'seg' });
+  const renderSize = () => {
+    size.innerHTML = '';
+    [['s', 'קטן'], ['m', 'בינוני'], ['l', 'גדול']].forEach(([v, lbl]) =>
+      size.append(h('b', { class: (sec.textSize || 'm') === v ? 'on' : '', onclick: () => { sec.textSize = v; renderSize(); } }, lbl)));
+  };
+  renderSize();
   const redraw = () => {
     wrap.innerHTML = '';
+    wrap.append(h('div', { class: 'clabel', style: 'margin-top:0' }, 'גודל הטקסט בתצוגה'), size);
     sec.aspects.forEach((a, i) => {
       const ttl = h('input', { class: 'line ttl', value: a.title, oninput: (e) => { a.title = e.target.value; } });
-      const txt = h('textarea', { rows: '2', oninput: (e) => { a.text = e.target.value; } }); txt.value = a.text;
+      const txt = h('textarea', { rows: '3', oninput: (e) => { a.text = e.target.value; autoGrow(e.target); } });
+      txt.value = a.text;
       const x = h('span', { class: 'x', onclick: () => { sec.aspects.splice(i, 1); redraw(); } }, '✕');
       wrap.append(h('div', { class: 'row' }, [h('div', { class: 'tx' }, [ttl, txt]), x]));
+      setTimeout(() => autoGrow(txt), 0);
     });
     const inp = h('input', { placeholder: 'הוסף היבט חדש (כותרת)…' });
     const add = h('button', { onclick: () => { if (inp.value.trim()) { sec.aspects.push({ title: inp.value.trim(), text: '' }); redraw(); } } }, 'הוסף');
     wrap.append(h('div', { class: 'addrow' }, [inp, add]));
-    wrap.append(h('div', { class: 'note' }, 'כל היבט הוא חלק מהחזון (מה אני נותן · מה זה גורם לי · איך אני מרגיש). אפשר להוסיף עוד.'));
+    wrap.append(h('div', { class: 'note' }, 'Enter בתוך הטקסט = שורה חדשה. אם יש כמה היבטים — במסך החזון אפשר להחליק ביניהם.'));
   };
   redraw(); return wrap;
 }
@@ -202,16 +214,28 @@ function traitsEditor(sec) {
 
 function anchorEditor(sec) {
   const wrap = h('div');
-  const prev = h('img', { class: 'anchor-prev' });
-  if (sec.image) { prev.src = 'file://' + sec.image + '?t=' + Date.now(); prev.style.display = 'block'; }
-  const up = h('button', { class: 'upload', onclick: async () => {
-    const p = await window.rega.pickImage();
-    if (p) { sec.image = p; prev.src = 'file://' + p + '?t=' + Date.now(); prev.style.display = 'block'; }
-  } }, 'העלה תמונה מהמחשב');
-  const cap = h('input', { class: 'cin', value: sec.caption || '', oninput: (e) => { sec.caption = e.target.value; } });
-  wrap.append(prev, h('div', {}, up), h('div', { class: 'clabel' }, 'כיתוב (טקסט חופשי שלך)'), cap,
-    h('div', { class: 'note' }, 'התמונה נשמרת בחשבון שלך במחשב. הכיתוב מופיע מתחתיה במסך העוגן.'));
-  return wrap;
+  if (!Array.isArray(sec.items)) sec.items = [];
+  const redraw = () => {
+    wrap.innerHTML = '';
+    sec.items.forEach((it, i) => {
+      const card = h('div', { class: 'anchor-item' });
+      const prev = h('img', { class: 'anchor-prev' });
+      if (it.image) { prev.src = 'file://' + it.image + '?t=' + Date.now(); prev.style.display = 'block'; }
+      const up = h('button', { class: 'upload', onclick: async () => {
+        const p = await window.rega.pickImage();
+        if (p) { it.image = p; prev.src = 'file://' + p + '?t=' + Date.now(); prev.style.display = 'block'; }
+      } }, it.image ? 'החלף תמונה' : 'העלה תמונה');
+      const rm = h('button', { class: 'btn ghost sm2', onclick: () => { sec.items.splice(i, 1); redraw(); } }, 'הסר');
+      const cap = h('input', { class: 'cin', value: it.caption || '', oninput: (e) => { it.caption = e.target.value; } });
+      card.append(prev, h('div', { style: 'display:flex;gap:10px;align-items:center' }, [up, rm]),
+        h('div', { class: 'clabel' }, 'כיתוב'), cap);
+      wrap.append(card);
+    });
+    const addA = h('button', { onclick: () => { sec.items.push({ image: '', caption: '' }); redraw(); } }, '+ הוסף עוגן');
+    wrap.append(h('div', { class: 'addrow' }, [h('div', { style: 'flex:1' }), addA]));
+    wrap.append(h('div', { class: 'note' }, 'אפשר כמה עוגנים — במסך העוגן אפשר להחליק ביניהם. התמונות נשמרות אצלך במחשב.'));
+  };
+  redraw(); return wrap;
 }
 
 function gratitudeEditor(sec) {

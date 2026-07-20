@@ -13,6 +13,7 @@ function defaults() {
     sections: {
       vision: {
         enabled: true, order: 0, times: ['08:30'], days: WORKDAYS, snooze: 3, random15: true,
+        textSize: 'm',
         aspects: [
           { title: 'מה אני נותן למקום העבודה', text: 'אנשיוּת. סדר וארגון. ניהול מצוין. פיתוח ושיפור מתמיד — מתוך רוגע ושליטה.' },
           { title: 'מה מקום העבודה גורם לי להרגיש', text: 'ביטחון, רוגע ושליטה, שייכות אמיתית.' },
@@ -37,7 +38,7 @@ function defaults() {
       },
       anchor: {
         enabled: false, order: 3, times: ['16:30'], days: WORKDAYS, snooze: 3, random15: true,
-        image: '', caption: 'לשם אתה הולך.'
+        items: [{ image: '', caption: 'לשם אתה הולך.' }]
       },
       gratitude: {
         enabled: true, order: 4, times: ['11:00', '16:00'], days: WORKDAYS, snooze: 3, random15: false,
@@ -63,12 +64,27 @@ function deepMerge(base, over) {
 
 let cache = null;
 
+// Upgrade older data shapes in place (e.g. single-image anchor -> list of anchors).
+function migrate(d) {
+  const a = d.sections && d.sections.anchor;
+  if (a) {
+    if (!Array.isArray(a.items)) a.items = [];
+    if ('image' in a || 'caption' in a) {
+      const hadContent = (a.image && a.image.length) || (a.caption && a.caption !== 'לשם אתה הולך.');
+      if (hadContent) a.items = [{ image: a.image || '', caption: a.caption || 'לשם אתה הולך.' }];
+      delete a.image; delete a.caption;
+    }
+    if (a.items.length === 0) a.items.push({ image: '', caption: 'לשם אתה הולך.' });
+  }
+  return d;
+}
+
 function load() {
   if (cache) return cache;
   try {
     const raw = JSON.parse(fs.readFileSync(FILE, 'utf8'));
     // merge defaults so new fields appear on upgrade, but keep user content
-    cache = deepMerge(defaults(), raw);
+    cache = migrate(deepMerge(defaults(), raw));
   } catch {
     cache = defaults();
     save();

@@ -5,8 +5,7 @@ const snoozeLeft = parseInt(params.get('sz') || '0', 10);
 const el = (id) => document.getElementById(id);
 const LABEL = { vision: 'חזון אישי', mantra: 'מנטרה', traits: 'התכונות שלי', anchor: 'תזכורת לעצמי', gratitude: 'רגע של הודיה' };
 
-let mantras = [];
-let mIdx = 0;
+let carousel = null; // { items, idx, show }
 
 function timeLabel() {
   const d = new Date();
@@ -19,18 +18,20 @@ async function render() {
   el('eyebrow').innerHTML = `${LABEL[section]} <span class="dot">·</span> ${timeLabel()}`;
 
   if (section === 'vision') {
-    const asp = (sec.aspects && sec.aspects.length) ? sec.aspects[Math.floor(Math.random() * sec.aspects.length)] : { title: '', text: 'עדיין לא הוזן חזון. פתח את ההגדרות כדי להזין.' };
-    el('facet').textContent = asp.title; el('facet').style.display = 'block';
-    el('title').classList.add('vision');           // אזור רחב מעט + מעברי שורה ידניים
-    el('title').textContent = asp.text;
-    el('cue').textContent = 'קרא לאט. זה מי שאתה במיטבך.';
+    const aspects = (sec.aspects && sec.aspects.length) ? sec.aspects
+      : [{ title: '', text: 'עדיין לא הוזן חזון. פתח את ההגדרות כדי להזין.' }];
+    el('title').classList.add('vision', 'ts-' + (sec.textSize || 'm'));
+    document.querySelector('.wrap').classList.add('wide');
+    setupCarousel(aspects, (a) => {
+      el('facet').textContent = a.title || ''; el('facet').style.display = a.title ? 'block' : 'none';
+      el('title').textContent = a.text || '';
+    });
+    el('cue').textContent = aspects.length > 1 ? 'קרא לאט. החלק לצדדים לעוד היבטים.' : 'קרא לאט. זה מי שאתה במיטבך.';
     el('act').textContent = 'קראתי';
   } else if (section === 'mantra') {
-    mantras = (sec.items && sec.items.length) ? sec.items.slice() : ['עדיין לא הוזנו מנטרות. פתח את ההגדרות.'];
-    mIdx = Math.floor(Math.random() * mantras.length);
-    showMantra();
-    if (mantras.length > 1) { el('prev').style.display = ''; el('next').style.display = ''; el('cue').textContent = 'החלק לצדדים לראות עוד.'; }
-    else el('cue').textContent = 'משפט אחד. קרא אותו, אולי בקול.';
+    const items = (sec.items && sec.items.length) ? sec.items : ['עדיין לא הוזנו מנטרות. פתח את ההגדרות.'];
+    setupCarousel(items, (m) => { el('title').textContent = m; });
+    el('cue').textContent = items.length > 1 ? 'החלק לצדדים לראות עוד.' : 'משפט אחד. קרא אותו, אולי בקול.';
     el('act').textContent = 'המשך ליום'; el('act').classList.add('ghost');
     el('extra').innerHTML = '<div class="ring"><i></i><b class="breathe"></b></div>';
   } else if (section === 'traits') {
@@ -42,9 +43,13 @@ async function render() {
     el('act').textContent = 'יופי, ממשיך'; el('act').classList.add('ghost');
   } else if (section === 'anchor') {
     el('title').style.display = 'none';
-    if (sec.image) { el('anchor').src = 'file://' + sec.image + '?t=' + Date.now(); el('anchor').style.display = 'block'; }
-    el('extra').innerHTML = `<div class="mantra" style="font-size:24px">${escapeHtml(sec.caption || '')}</div>`;
-    el('cue').textContent = '';
+    const items = (sec.items && sec.items.length) ? sec.items : [{ image: '', caption: '' }];
+    setupCarousel(items, (it) => {
+      if (it.image) { el('anchor').src = 'file://' + it.image + '?t=' + Date.now(); el('anchor').style.display = 'block'; }
+      else el('anchor').style.display = 'none';
+      el('extra').innerHTML = `<div class="mantra" style="font-size:24px">${escapeHtml(it.caption || '')}</div>`;
+    });
+    el('cue').textContent = items.length > 1 ? 'החלק לצדדים לעוד עוגנים.' : '';
     el('act').textContent = 'תודה, ממשיך'; el('act').classList.add('ghost');
   } else if (section === 'gratitude') {
     el('title').classList.add('sm');
@@ -62,9 +67,24 @@ async function render() {
   }
 }
 
-function showMantra() { el('title').textContent = mantras[mIdx]; el('title').classList.remove('sm'); }
-el('prev').onclick = () => { mIdx = (mIdx - 1 + mantras.length) % mantras.length; showMantra(); };
-el('next').onclick = () => { mIdx = (mIdx + 1) % mantras.length; showMantra(); };
+/* ---------- carousel (mantra / vision / anchor) ---------- */
+function setupCarousel(items, show) {
+  carousel = { items, idx: Math.floor(Math.random() * items.length), show };
+  show(items[carousel.idx]);
+  if (items.length > 1) { el('navPrev').style.display = 'flex'; el('navNext').style.display = 'flex'; renderDots(); }
+}
+function renderDots() {
+  const d = el('dots'); d.style.display = 'flex';
+  d.innerHTML = carousel.items.map((_, i) => `<i class="${i === carousel.idx ? 'on' : ''}"></i>`).join('');
+}
+function move(dir) {
+  if (!carousel || carousel.items.length < 2) return;
+  carousel.idx = (carousel.idx + dir + carousel.items.length) % carousel.items.length;
+  carousel.show(carousel.items[carousel.idx]);
+  renderDots();
+}
+el('navPrev').onclick = () => move(-1);   // › previous (right, in RTL)
+el('navNext').onclick = () => move(1);    // ‹ next (left)
 
 el('act').onclick = () => {
   let text = null;
@@ -76,8 +96,17 @@ el('act').onclick = () => {
 };
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') window.rega.closeMoment();
-  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && section === 'gratitude') el('act').click();
+  if (e.key === 'Escape') return window.rega.closeMoment();
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && section === 'gratitude') return el('act').click();
+  const typing = document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName);
+  if (!typing && e.key === 'ArrowRight') move(-1);   // RTL: right = previous
+  if (!typing && e.key === 'ArrowLeft') move(1);
+});
+let sx = null;
+document.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', (e) => {
+  if (sx == null) return; const dx = e.changedTouches[0].clientX - sx;
+  if (Math.abs(dx) > 40) move(dx > 0 ? -1 : 1); sx = null;
 });
 
 function escapeHtml(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }

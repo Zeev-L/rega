@@ -6,14 +6,17 @@
   <style>
     body{display:flex;align-items:center;justify-content:center}
     .wrap{width:100%;max-width:640px;text-align:center;padding:40px 28px}
+    .wrap.wide{max-width:900px}
     .eyebrow{margin-bottom:30px}
     #title.mantra{font-size:32px;max-width:20ch}
     #title.mantra.sm{font-size:26px}
-    /* חזון: אזור טקסט מעט רחב יותר + כיבוד מעברי שורה ידניים, שמלל ארוך ייכנס במרכז בלי גלילה */
-    #title.mantra.vision{font-size:27px;max-width:28ch;line-height:1.5;white-space:pre-line;text-wrap:pretty}
+    /* חזון: אזור רחב + מעברי שורה ידניים; הרוחב/גודל נקבעים לפי בחירת המשתמש (ts-s/m/l) */
+    #title.mantra.vision{white-space:pre-line;text-wrap:pretty;line-height:1.45}
+    #title.vision.ts-s{font-size:22px;max-width:44ch}
+    #title.vision.ts-m{font-size:26px;max-width:42ch}
+    #title.vision.ts-l{font-size:30px;max-width:40ch}
     .facet{margin-bottom:18px}
     .cue{margin-top:26px}
-    .swipe{display:flex;align-items:center;justify-content:center;gap:24px}
     .ring{width:58px;height:58px;margin:34px auto 0;position:relative}
     .ring i{position:absolute;inset:0;border-radius:50%;border:1.5px solid var(--line-strong)}
     .ring b{position:absolute;inset:0;border-radius:50%;border:1.5px solid transparent;border-top-color:var(--gold);animation:spin 5s linear infinite}
@@ -22,24 +25,31 @@
     @keyframes breathe{0%,100%{transform:scale(.9);opacity:.55}50%{transform:scale(1.08);opacity:1}}
     .anchor-img{width:100%;max-width:460px;max-height:360px;margin:0 auto 24px;border-radius:20px;
       border:1px solid var(--line);object-fit:contain;display:block;background:rgba(244,238,225,.04)}
+    .dots{display:flex;gap:7px;justify-content:center;margin-top:22px}
+    .dots i{width:7px;height:7px;border-radius:50%;background:var(--line-strong);transition:all .25s}
+    .dots i.on{background:var(--gold);width:20px;border-radius:100px}
     .actions{display:flex;gap:14px;justify-content:center;margin-top:38px;align-items:center}
     .meta{display:flex;justify-content:space-between;align-items:center;margin-top:16px;font-size:12.5px;color:var(--ivory-dim)}
     .esc{position:fixed;top:20px;left:24px;color:var(--ivory-faint);font-size:12.5px}
+    .navchev{position:fixed;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;
+      border:1px solid var(--line-strong);background:rgba(21,19,42,.35);color:var(--ivory-dim);font-size:22px;
+      cursor:pointer;z-index:6;display:flex;align-items:center;justify-content:center;transition:color .2s,background .2s}
+    .navchev:hover{color:var(--ivory);background:rgba(244,238,225,.08)}
+    .navchev.right{right:30px}.navchev.left{left:30px}
   </style>
 </head>
 <body>
   <div class="esc">Esc לסגירה</div>
+  <button class="navchev right" id="navPrev" style="display:none" aria-label="הקודם">›</button>
+  <button class="navchev left" id="navNext" style="display:none" aria-label="הבא">‹</button>
   <div class="wrap fade">
     <div class="eyebrow" id="eyebrow"></div>
     <div class="facet" id="facet" style="display:none"></div>
-    <div class="swipe">
-      <button class="chev" id="prev" style="display:none">›</button>
-      <div class="mantra" id="title"></div>
-      <button class="chev" id="next" style="display:none">‹</button>
-    </div>
+    <div class="mantra" id="title"></div>
     <div class="cloud" id="cloud" style="display:none"></div>
     <img class="anchor-img" id="anchor" style="display:none" alt="">
     <div id="extra"></div>
+    <div class="dots" id="dots" style="display:none"></div>
     <div class="cue" id="cue"></div>
     <div class="actions">
       <button class="btn" id="act"></button>
