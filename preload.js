@@ -8,5 +8,7 @@ contextBridge.exposeInMainWorld('rega', {
   snooze: () => ipcRenderer.invoke('moment:snooze'),
   closeMoment: () => ipcRenderer.invoke('moment:close'),
   sendSummary: () => ipcRenderer.invoke('summary:send'),
-  openEditor: (sec) => ipcRenderer.invoke('open:editor', sec)
+  openEditor: (sec) => ipcRenderer.invoke('open:editor', sec),
+  exportContent: () => ipcRenderer.invoke('content:export'),
+  importContent: () => ipcRenderer.invoke('content:import')
 });

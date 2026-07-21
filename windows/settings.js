@@ -277,6 +277,21 @@ async function init() {
   renderEditor();
 
   document.querySelectorAll('.tabs b').forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+  $('#btnExport').addEventListener('click', async () => {
+    await persist(true); // save current edits so the export is up to date
+    const m = $('#ioMsg');
+    const r = await window.rega.exportContent();
+    if (r.ok) { m.style.color = 'var(--gold)'; m.textContent = 'התוכן יוצא לקובץ ✓'; }
+    else if (r.canceled) { m.textContent = ''; }
+    else { m.style.color = '#e59'; m.textContent = 'הייצוא נכשל: ' + (r.error || ''); }
+  });
+  $('#btnImport').addEventListener('click', async () => {
+    const m = $('#ioMsg');
+    const r = await window.rega.importContent();
+    if (r.ok) { D = r.data; renderSecList(); renderEmailRelay(); renderEditor(); m.style.color = 'var(--gold)'; m.textContent = 'התוכן יובא ונשמר ✓'; }
+    else if (r.canceled) { m.textContent = ''; }
+    else { m.style.color = '#e59'; m.textContent = 'הייבוא נכשל: ' + (r.error || ''); }
+  });
   $('#save').addEventListener('click', () => persist(false));
   $('#cancel').addEventListener('click', async () => { D = await window.rega.getData(); renderSecList(); renderEmailRelay(); renderEditor(); });
 

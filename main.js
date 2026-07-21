@@ -217,6 +217,71 @@ ipcMain.handle('image:pick', async () => {
   return dest;
 });
 
+// ---------- content export / import (move between machines) ----------
+function buildExportObject() {
+  const d = store.get();
+  const out = { app: 'rega', v: 1, language: d.language, sections: JSON.parse(JSON.stringify(d.sections)), email: d.email, relay: d.relay };
+  const anchor = out.sections.anchor;
+  if (anchor && Array.isArray(anchor.items)) {
+    anchor.items.forEach((it) => {
+      if (it.image && fs.existsSync(it.image)) {
+        try {
+          const buf = fs.readFileSync(it.image);
+          let ext = (path.extname(it.image) || '.png').slice(1).toLowerCase();
+          if (ext === 'jpg') ext = 'jpeg';
+          it.imageData = `data:image/${ext};base64,` + buf.toString('base64'); // embed so it travels
+        } catch (e) { /* skip unreadable image */ }
+      }
+      it.image = ''; // absolute path is machine-specific
+    });
+  }
+  return out;
+}
+function writeExport(filePath) { fs.writeFileSync(filePath, JSON.stringify(buildExportObject(), null, 2), 'utf8'); }
+function applyImport(filePath) {
+  let obj;
+  try { obj = JSON.parse(fs.readFileSync(filePath, 'utf8')); } catch { return { ok: false, error: 'קובץ לא תקין' }; }
+  if (!obj || obj.app !== 'rega' || !obj.sections) return { ok: false, error: 'זה לא קובץ תוכן של רגע' };
+  const destDir = path.join(app.getPath('userData'), 'images');
+  fs.mkdirSync(destDir, { recursive: true });
+  const anchor = obj.sections.anchor;
+  if (anchor && Array.isArray(anchor.items)) {
+    anchor.items.forEach((it, i) => {
+      if (it.imageData && /^data:image\//.test(it.imageData)) {
+        const m = it.imageData.match(/^data:image\/([\w]+);base64,([\s\S]*)$/);
+        if (m) {
+          try {
+            const ext = m[1] === 'jpeg' ? 'jpg' : m[1];
+            const dest = path.join(destDir, 'anchor-imp-' + Date.now() + '-' + i + '.' + ext);
+            fs.writeFileSync(dest, Buffer.from(m[2], 'base64'));
+            it.image = dest;
+          } catch (e) { /* skip */ }
+        }
+      }
+      delete it.imageData;
+    });
+  }
+  store.update((d) => {
+    d.sections = obj.sections;
+    if (obj.email) d.email = obj.email;
+    if (obj.relay) d.relay = obj.relay;
+    if (obj.language) d.language = obj.language;
+  });
+  rebuildSlots();
+  return { ok: true, data: store.get() };
+}
+ipcMain.handle('content:export', async () => {
+  const res = await dialog.showSaveDialog({ defaultPath: 'rega-content.json', filters: [{ name: 'JSON', extensions: ['json'] }] });
+  if (res.canceled || !res.filePath) return { ok: false, canceled: true };
+  try { writeExport(res.filePath); return { ok: true, path: res.filePath }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+});
+ipcMain.handle('content:import', async () => {
+  const res = await dialog.showOpenDialog({ properties: ['openFile'], filters: [{ name: 'JSON', extensions: ['json'] }] });
+  if (res.canceled || !res.filePaths[0]) return { ok: false, canceled: true };
+  return applyImport(res.filePaths[0]);
+});
+
 ipcMain.handle('moment:action', (_e, { section, gratitudeText }) => {
   if (section === 'gratitude' && gratitudeText && gratitudeText.trim()) store.logGratitude(gratitudeText);
   markSlotDone();
@@ -305,6 +370,15 @@ app.whenReady().then(() => {
     console.log('DUMP nowMin=' + nowMinutes());
     console.log('DUMP slots=' + JSON.stringify(slots.map((s) => ({ key: s.key, min: s.minute, status: s.status }))));
     console.log('DUMP email=' + JSON.stringify(emailSlot));
+    return app.exit(0);
+  }
+  if (process.env.REGA_TEST_IO) {
+    try {
+      writeExport('/tmp/rega-io.json');
+      const r = applyImport('/tmp/rega-io.json');
+      const items = r.ok ? r.data.sections.anchor.items : [];
+      console.log('IO_TEST ok=' + r.ok + ' anchors=' + items.length + ' img0=' + (items[0] && items[0].image ? 'yes' : 'no') + ' err=' + (r.error || ''));
+    } catch (e) { console.log('IO_TEST_ERR ' + e.message); }
     return app.exit(0);
   }
   if (process.env.REGA_SEND_TEST) {
